@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import re
-import time
-import sys
 
 columns = 50
 rows = 6

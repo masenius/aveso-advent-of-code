@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import re
-import time
-import sys
 
 columns = 50
 rows = 6
@@ -45,12 +43,5 @@ for instruction in f.readlines():
     if "rotate" in instruction:
         number, steps = re.findall(r'[\d]+', instruction)
         screen = rotate(screen, True if 'column' in instruction else False, int(number), int(steps))
-
-lit = 0
-
-for row in screen:
-    for pixel in row:
-        if pixel:
-            lit += 1
             
 print_screen()
