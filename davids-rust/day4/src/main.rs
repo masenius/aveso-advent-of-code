@@ -3,22 +3,26 @@ use std::cmp::min;
 
 #[derive(Debug)]
 struct Room {
-    letters: Vec<char>,
+    room_name: Vec<char>,
     section: u32,
     checksum: Vec<char>
 }
 
 impl Room {
-    fn new(letters: Vec<char>, section: u32, checksum: Vec<char>) -> Room {
+    fn new(room_name: Vec<char>, section: u32, checksum: Vec<char>) -> Room {
         Room {
-            letters: letters,
+            room_name: room_name,
             section: section,
             checksum: checksum
         }
     }
 
+    fn room_letters(&self) -> Vec<char> {
+        self.room_name.clone().into_iter().filter(|&c| c.is_alphabetic()).collect()
+    }
+
     fn letter_freq(&self) -> HashMap<char, usize> {
-        self.letters.iter()
+        self.room_letters().iter()
             .fold(HashMap::new(), |mut map, &c| {
                 {
                     let counter = map.entry(c).or_insert(0);
@@ -34,7 +38,7 @@ impl Room {
         }
 
         let freq_map = self.letter_freq();
-        let mut sorted = self.letters.clone();
+        let mut sorted = self.room_letters().clone();
         sorted.sort_by_key(|c| freq_map.get(&c).unwrap());
         sorted.reverse();
 
@@ -69,9 +73,28 @@ impl Room {
 
         true
     }
+
+    fn decrypt(&self) -> String {
+        let alphabet = "abcdefghijklmnopqrstuvwxyz".chars().collect::<Vec<_>>();
+        self.room_name.iter()
+            .map(|&c| {
+                if c == '-' {
+                    ' '
+                }
+                else {
+                    let letter_pos = alphabet.iter().position(|&l| l == c).unwrap();
+                    *alphabet.iter()
+                        .cycle()
+                        .skip(letter_pos)
+                        .nth(self.section as usize)
+                        .unwrap()
+                }
+            }).collect()
+    }
 }
 
-fn take_until_filter<F, S>(input: &[char], filter: F,
+fn take_until_filter<F, S>(input: &[char],
+                           filter: F,
                            stop: S) -> (Vec<char>, usize)
     where F: Fn(char) -> bool, S: Fn(char) -> bool {
     let mut out = Vec::new();
@@ -91,9 +114,12 @@ fn take_until_filter<F, S>(input: &[char], filter: F,
 fn parse_room(input: &str) -> Room {
     let chars = input.chars().collect::<Vec<char>>();
     let mut consumed = 0;
-    let (letters, chars_read) = take_until_filter(&chars,
-                                                  |c| c.is_alphabetic(),
-                                                  |c| c.is_numeric());
+    let (mut room_name, chars_read) = take_until_filter(&chars,
+                                                    |c| c.is_alphabetic() || c == '-',
+                                                    |c| c.is_numeric());
+    if room_name[room_name.len() - 1] == '-' {
+        room_name.pop();
+    }
 
     consumed += chars_read;
     let (number_chars, chars_read) = take_until_filter(&chars[consumed..],
@@ -107,19 +133,31 @@ fn parse_room(input: &str) -> Room {
                                           |c| c.is_alphabetic(),
                                           |_| false);
 
-    Room::new(letters, number, checksum)
+    Room::new(room_name, number, checksum)
 }
 
 fn main() {
     let input = include_str!("input");
-    let section_count = input.lines()
+    let valid_rooms = input.lines()
         .map(parse_room)
         .filter(|r| r.valid())
+        .collect::<Vec<_>>();
+
+    let section_count = valid_rooms.iter()
         .fold(0, |sum, r| {
             sum + r.section
         });
-
     println!("Sum of sections of valid rooms is {}", section_count);
+
+    let decrypted = valid_rooms.iter()
+        .map(|r| {
+            let mut s = r.decrypt();
+            s.push_str(&format!(" {}\n", r.section));
+            s
+        })
+        .collect::<String>();
+    println!("Decrypted: ");
+    println!("{}", decrypted);
 }
 
 #[cfg(test)]
@@ -146,4 +184,11 @@ mod test {
         assert!(!parse_room("totally-real-room-200[decoy]").valid());
     }
 
+    // Part 2
+
+    #[test]
+    fn tc_5() {
+        assert_eq!(parse_room("qzmt-zixmtkozy-ivhz-343").decrypt(),
+                   "very encrypted name".to_string());
+    }
 }
