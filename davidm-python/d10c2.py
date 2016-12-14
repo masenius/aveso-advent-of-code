@@ -3,7 +3,7 @@
 import re
 from collections import defaultdict
 
-f = open("d10.input","r")
+f = open("d10.input", "r")
 
 transactions = []
 bots = defaultdict(list)
@@ -30,23 +30,23 @@ while running:
                 giver, low_type, low, high_type, high = transaction
                 if giver == bot:
                     break
-                    
+
             minimum, maximum = min(bots[giver]), max(bots[giver])
             bots[giver] = []
-            
+
             if low_type == 'output':
                 bins[low].append(minimum)
             else:
                 bots[low].append(minimum)
-            
+
             if high_type == 'output':
                 bins[high].append(maximum)
             else:
                 bots[high].append(maximum)
-                
+
             if len(bins[0]) > 0 and len(bins[1]) > 0 and len(bins[2]) > 0:
                 print bins[0][0] * bins[1][0] * bins[2][0]
                 running = False
                 break
-            
+
             break

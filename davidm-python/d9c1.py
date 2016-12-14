@@ -12,7 +12,7 @@ while i < len(compressed):
     if compressed[i] == ')':
         chars, repeats = re.findall(r'[\d]+', marker)
         marker = ""
-        string = compressed[i+1:i+int(chars)+1] * int(repeats)
+        string = compressed[i + 1:i + int(chars) + 1] * int(repeats)
         decompressed = decompressed + string
         i = i + int(chars) + 1
     elif compressed[i] == '(' or marker:
@@ -21,5 +21,5 @@ while i < len(compressed):
     else:
         decompressed = decompressed + compressed[i]
         i = i + 1
-        
+
 print len(decompressed)

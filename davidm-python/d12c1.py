@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import re
-
 f = open("d12.input", "r")
 
 instructions = []
@@ -22,10 +20,10 @@ registers = [0, 0, 0, 0]
 instruction = 0
 while instruction < len(instructions):
     operator = instructions[instruction][0]
-    
+
     if 'cpy' in operator:
         fr = instructions[instruction][1]
-        to = ord(instructions[instruction][2]) -97
+        to = ord(instructions[instruction][2]) - 97
         if fr.isdigit():
             registers[to] = int(fr)
         else:
@@ -41,7 +39,7 @@ while instruction < len(instructions):
         steps = int(instructions[instruction][2])
         if fr.isdigit() and int(fr) != 0 or registers[ord(fr) - 97] != 0:
             instruction += steps - 1
-    
+
     instruction += 1
-        
+
 print registers

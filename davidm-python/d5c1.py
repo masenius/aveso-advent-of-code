@@ -6,8 +6,8 @@ pwd_input = "ojvtpuvg"
 pwd = ""
 done = False
 
-i=0
-while done == False:
+i = 0
+while done is False:
     pwd_test = pwd_input + str(i)
     h = md5.new(pwd_test).hexdigest()
     if h[:5] == '00000':

@@ -5,14 +5,16 @@ import re
 columns = 50
 rows = 6
 
-screen = [[False]*columns for n in range(rows)]
+screen = [[False] * columns for n in range(rows)]
 
 f = open("d8.input", "r")
+
 
 def rect(screen, columns, rows):
     for row in range(0, rows):
         for column in range(0, columns):
             screen[row][column] = True
+
 
 def rotate(screen, column, number, steps):
     if column:
@@ -24,7 +26,8 @@ def rotate(screen, column, number, steps):
     else:
         screen[number] = screen[number][-steps:] + screen[number][:-steps]
         return screen
-    
+
+
 def print_screen():
     output = ""
     for row in screen:
@@ -35,7 +38,7 @@ def print_screen():
                 output = output + "."
         output = output + '\n'
     print output
-            
+
 for instruction in f.readlines():
     if "rect" in instruction:
         columns, rows = re.findall(r'[\d]+', instruction)
@@ -43,5 +46,5 @@ for instruction in f.readlines():
     if "rotate" in instruction:
         number, steps = re.findall(r'[\d]+', instruction)
         screen = rotate(screen, True if 'column' in instruction else False, int(number), int(steps))
-            
+
 print_screen()
