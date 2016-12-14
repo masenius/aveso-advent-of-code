@@ -105,6 +105,9 @@ for brother in items:
     for sister in items:
         if brother[1] == sister[1] and brother[2] == 'generator' and sister[2] == 'microchip':
                 state[1].append([brother[0], sister[0]])
+                
+state[1].append([0,0])
+state[1].append([0,0])
 
 queue.append(state)
 
@@ -122,3 +125,4 @@ while True:
     queue.extend(states)
     
     print distance, len(visited_states)
+        
