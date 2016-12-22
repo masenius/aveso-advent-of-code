@@ -29,19 +29,23 @@ fn parse_data(chars: &[char], out_buffer: &mut Vec<char>) -> usize {
 }
 
 fn parse_marker(chars: &[char]) -> Result<(usize, Marker), &'static str> {
-    let mut marker = String::new();
+    let mut num = String::new();
+    let mut nums = Vec::new();
     let mut consumed = 0;
     for c in chars.iter() {
         consumed += 1;
         match *c {
             '(' => continue,
-            ')' => break,
-            ch => marker.push(ch)
+            'x' | ')' => {
+                nums.push(try!(num.parse::<usize>().or(Err("Failed to parse number in marker"))));
+                if *c == ')' {
+                    break
+                }
+                num.clear();
+            },
+            ch => num.push(ch)
         }
     }
-    let nums: Vec<_> = try!(marker.split('x')
-                            .map(|s| s.parse::<usize>().or(Err("Failed to parse number in marker")))
-                            .collect());
     if nums.len() == 2 {
         Ok((consumed, Marker::new(nums[0], nums[1])))
     }
@@ -65,12 +69,15 @@ fn repeat_chars(chars: &[char], marker: Marker, out_buffer: &mut Vec<char>) -> R
     Ok(marker.chars)
 }
 
-fn decompress(input: &str) -> Result<Vec<char>, &'static str> {
+fn repeat_chars2(chars: &[char], marker: Marker) -> Result<(usize, usize), &'static str> {
+    let mut decompressed_len = 0;
+    decompressed_len += try!(decompress_chars_v2(&chars[..marker.chars])) * marker.repeat_count;
+    Ok((marker.chars, decompressed_len))
+}
+
+fn decompress_chars(chars: &[char]) -> Result<Vec<char>, &'static str> {
     let mut state = ParseState::Data;
-    let mut decompressed = Vec::with_capacity(input.len() * 3);
-    let chars = input.chars()
-        .filter(|c| !c.is_whitespace())
-        .collect::<Vec<char>>();
+    let mut decompressed = Vec::with_capacity(chars.len() * 3);
     let mut pos = 0;
     loop {
         match state {
@@ -97,15 +104,64 @@ fn decompress(input: &str) -> Result<Vec<char>, &'static str> {
     Ok(decompressed)
 }
 
+fn decompress_chars_v2(chars: &[char]) -> Result<usize, &'static str> {
+    let mut state = ParseState::Data;
+    let mut pos = 0;
+    let mut decompressed_len = 0;
+    loop {
+        match state {
+            ParseState::Data => {
+                let consumed = chars[pos..].iter().take_while(|&c| *c != '(').count();
+                pos += consumed;
+                decompressed_len += consumed;
+                state = ParseState::Marker;
+            },
+            ParseState::Marker => {
+                let (consumed, marker) = try!(parse_marker(&chars[pos..]));
+                pos += consumed;
+                state = ParseState::Repeated(marker)
+            },
+            ParseState::Repeated(marker) => {
+                let (consumed, decomp_len) = try!(repeat_chars2(&chars[pos..], marker));
+                pos += consumed;
+                decompressed_len += decomp_len;
+                state = ParseState::Data;
+            }
+        }
+        if pos >= chars.len() {
+            break;
+        }
+    }
+    Ok(decompressed_len)
+}
+
+fn decompress(input: &str) -> Result<Vec<char>, &'static str> {
+    let chars = input.chars()
+        .filter(|c| !c.is_whitespace())
+        .collect::<Vec<char>>();
+    decompress_chars(&chars)
+}
+
+fn decompress_v2(input: &str) -> Result<usize, &'static str> {
+    let chars = input.chars()
+        .filter(|c| !c.is_whitespace())
+        .collect::<Vec<char>>();
+    decompress_chars_v2(&chars)
+}
+
 fn main() {
     let input = include_str!("input");
     let decompressed = decompress(input).unwrap();
+    println!("Part 1:");
     println!("Decompressed length {}", decompressed.len());
+    let v2_decompressed_len = decompress_v2(input).unwrap();
+    println!("Part 2:");
+    println!("Decompressed length {}", v2_decompressed_len);
 }
 
 #[cfg(test)]
-mod test {
-    use super::decompress;
+mod tests {
+    use super::{decompress, decompress_v2};
 
     fn decompress_to_str(input: &str) -> String {
         decompress(input).unwrap().iter().cloned().collect()
@@ -148,5 +204,11 @@ mod test {
     #[test]
     fn tc_7() {
         test_decompress("A(1x5)  BC", "ABBBBBC");
+    }
+
+    // Part 2
+    #[test]
+    fn tc_8() {
+        assert_eq!(decompress_v2("(27x12)(20x12)(13x14)(7x10)(1x12)A").unwrap(), 241920);
     }
 }
