@@ -67,6 +67,52 @@ named!(parse_instructions<Vec<Instruction> >,
        many1!(alt!(parse_bot_gives | parse_val_to_bot)));
 
 
+type BotMap = HashMap<u32, BTreeSet<u32>>;
+type OutputMap = HashMap<u32, u32>;
+
+struct World {
+    bots: BotMap,
+    outputs: OutputMap
+}
+
+impl World {
+    fn new() -> World {
+        World {
+            bots: BotMap::new(),
+            outputs: OutputMap::new()
+        }
+    }
+
+    fn bot_chips(&mut self, bot: u32) -> &mut BTreeSet<u32> {
+        self.bots.entry(bot).or_insert(BTreeSet::new())
+    }
+
+    fn get_low_high(&self, bot: u32) -> Option<(u32, u32)> {
+        if let Some(chips) = self.bots.get(&bot) {
+            if chips.len() == 2 {
+                let mut ci = chips.iter();
+                let low = ci.nth(0).unwrap();
+                let high = ci.nth(0).unwrap();
+                return Some((*low, *high));
+            }
+        }
+        None
+    }
+
+    fn transfer_chip_to_output(&mut self, output: u32, chip: u32) -> bool {
+        if let Some(_) = self.outputs.insert(output, chip) {
+            false
+        }
+        else {
+            true
+        }
+    }
+
+    fn get_output_value(&self, output: u32) -> Option<&u32> {
+        self.outputs.get(&output)
+    }
+}
+
 const LOW_CHIP: u32 = 17;
 const HIGH_CHIP: u32 = 61;
 
@@ -74,57 +120,78 @@ fn is_responsible_bot(chips: &BTreeSet<u32>) -> bool {
     chips.contains(&LOW_CHIP) && chips.contains(&HIGH_CHIP)
 }
 
-fn transfer_chip(recipient: u32, chip: u32, bots: &mut HashMap<u32, BTreeSet<u32>>) -> &BTreeSet<u32> {
-    let nums = bots.entry(recipient).or_insert(BTreeSet::new());
-    nums.insert(chip);
-    nums
+fn transfer_chip_to_bot(recipient: u32, chip: u32, world: &mut World) -> (bool, &BTreeSet<u32>) {
+    let nums = world.bot_chips(recipient);
+    if nums.len() == 2 {
+        (false, nums)
+    }
+    else {
+        nums.insert(chip);
+        (true, nums)
+    }
 }
 
-fn run_instructions(instructions: &[Instruction], bots: &mut HashMap<u32, BTreeSet<u32>>) -> Option<u32> {
-    for inst in instructions.iter() {
-        if let Instruction::BotGives{bot, low_recipient, high_recipient} = *inst {
-            if let Some(nums) = bots.get(&bot).cloned() {
-                if nums.len() == 2 {
-                    let mut ni = nums.iter();
-                    let low = ni.nth(0).unwrap();
-                    let high = ni.nth(0).unwrap();
-                    if let Recipient::Bot(bn) = low_recipient {
-                        let chips = transfer_chip(bn, *low, bots);
-                        if is_responsible_bot(chips) {
-                            return Some(bn);
-                        }
-                    }
-                    if let Recipient::Bot(bn) = high_recipient {
-                        let chips = transfer_chip(bn, *high, bots);
-                        if is_responsible_bot(chips) {
-                            return Some(bn);
-                        }
-                    }
-                }
+fn make_transfer<F>(recipient: Recipient, value: u32, world: &mut World, on_bot_xfer: &F) -> bool
+    where F: Fn(u32, &BTreeSet<u32>) {
+    match recipient {
+        Recipient::Bot(bn) => {
+            let (is_new_xfer, chips) = transfer_chip_to_bot(bn, value, world);
+            if is_new_xfer {
+                on_bot_xfer(bn, chips);
+                return true;
+            }
+        },
+        Recipient::Output(on) => {
+            if world.transfer_chip_to_output(on, value) {
+                return true;
             }
         }
     }
-    None
+    false
+}
+
+fn run_instructions<F>(instructions: &[Instruction], world: &mut World, on_bot_xfer: &F) -> bool
+    where F: Fn(u32, &BTreeSet<u32>) {
+    let mut transfer_made = false;
+    for inst in instructions.iter() {
+        if let Instruction::BotGives{bot, low_recipient, high_recipient} = *inst {
+            if let Some((low, high)) = world.get_low_high(bot) {
+                if make_transfer(low_recipient, low, world, on_bot_xfer) {
+                    transfer_made = true;
+                }
+                if make_transfer(high_recipient, high, world, on_bot_xfer) {
+                    transfer_made = true;
+                }
+            }
+
+        }
+    }
+    transfer_made
+}
+
+fn on_bot_transfer(bot: u32, chips: &BTreeSet<u32>) {
+    if is_responsible_bot(chips) {
+        println!("Bot {} is responsible", bot);
+    }
 }
 
 fn main() {
     let input = include_bytes!("input");
     let (_, instructions) = parse_instructions(input).unwrap();
-    let mut bots = HashMap::new();
+    let mut world = World::new();
     for inst in instructions.iter() {
         if let Instruction::ValToBot{bot, value} = *inst {
-            let nums = bots.entry(bot).or_insert(BTreeSet::new());
+            let nums = world.bot_chips(bot);
             nums.insert(value);
             assert!(nums.len() <= 2);
         }
 
     }
 
-    loop {
-        if let Some(bot) = run_instructions(&instructions, &mut bots) {
-            println!("Bot {} is responsible", bot);
-            break;
-        }
+    while run_instructions(&instructions, &mut world, &on_bot_transfer) {}
+    match (world.get_output_value(0), world.get_output_value(1), world.get_output_value(2)) {
+        (Some(a), Some(b), Some(c)) => println!("Product of chips in output 0, 1 and 2 is {}", a * b * c),
+        _ => panic!("One or more of outputs 0, 1, 2 have no chip")
     }
 }
 
