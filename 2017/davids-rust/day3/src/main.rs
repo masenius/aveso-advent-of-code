@@ -51,15 +51,20 @@ fn offset_from_side_center(num: u32, circle_n: u32, side: Side) -> Option<u32> {
     None
 }
 
+fn part_1(input: u32) -> u32 {
+    let outwards_distance = circle_of_num(input);
+    let sideways_distance = offset_from_side_center(input, outwards_distance, Side::Right)
+        .or_else(|| offset_from_side_center(input, outwards_distance, Side::Top))
+        .or_else(|| offset_from_side_center(input, outwards_distance, Side::Bottom))
+        .or_else(|| offset_from_side_center(input, outwards_distance, Side::Left))
+        .expect("Number wasn't found in the expected circle");
+    outwards_distance + sideways_distance
+}
+
 fn main() {
     const INPUT: u32 = 265149;
-    let outwards_distance = circle_of_num(INPUT);
-    let sideways_distance = offset_from_side_center(INPUT, outwards_distance, Side::Right)
-        .or_else(|| offset_from_side_center(INPUT, outwards_distance, Side::Top))
-        .or_else(|| offset_from_side_center(INPUT, outwards_distance, Side::Bottom))
-        .or_else(|| offset_from_side_center(INPUT, outwards_distance, Side::Left))
-        .expect("Number wasn't found in the expected circle");
-    println!("Distance is {}", outwards_distance + sideways_distance);
+
+    println!("Part 1: Distance is {}", part_1(INPUT));
 }
 
 #[cfg(test)]
