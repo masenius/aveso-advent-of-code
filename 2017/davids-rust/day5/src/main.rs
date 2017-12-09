@@ -1,7 +1,20 @@
-fn part_1(instructions: &mut [isize]) -> u32 {
+fn increment(num: &mut isize) {
+    *num += 1;
+}
+
+fn part2_offset(num: &mut isize) {
+    if *num >= 3 {
+        *num -= 1;
+    }
+    else {
+        *num += 1;
+    }
+}
+
+fn run_instructions(instructions: &mut [isize], offset_f: fn(&mut isize)) -> u32 {
     let mut i = 0;
     let mut steps = 0;
-    while let Some(num) = instructions.get_mut(i) {
+    while let Some(mut num) = instructions.get_mut(i) {
         steps += 1;
 
         let signed_i = i as isize + *num;
@@ -10,7 +23,7 @@ fn part_1(instructions: &mut [isize]) -> u32 {
         }
 
         i = signed_i as usize;
-        *num += 1;
+        offset_f(&mut num);
     }
     steps
 }
@@ -21,5 +34,6 @@ fn main() {
         .filter_map(|l| l.parse().ok())
         .collect::<Vec<isize>>();
 
-    println!("Part 1: Number of steps: {}", part_1(&mut instructions.clone()));
+    println!("Part 1: Number of steps: {}", run_instructions(&mut instructions.clone(), increment));
+    println!("Part 2: Number of steps: {}", run_instructions(&mut instructions.clone(), part2_offset));
 }
