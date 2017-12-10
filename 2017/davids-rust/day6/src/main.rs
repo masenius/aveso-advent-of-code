@@ -42,12 +42,14 @@ fn cycles_until_loop(banks: &mut [u32]) -> u32 {
 
 fn main() {
     let input = include_str!("input");
-    let banks = input.split_whitespace()
+    let mut banks = input.split_whitespace()
         .filter_map(|n| n.parse().ok())
         .collect::<Vec<u32>>();
     assert_eq!(banks.len(), 16);
     println!("Part 1: Cycles until loop: {}",
-             cycles_until_loop(banks.clone().as_mut_slice()));
+             cycles_until_loop(banks.as_mut_slice()));
+    println!("Part 2: Cycles in loop: {}",
+             cycles_until_loop(banks.as_mut_slice()));
 }
 
 #[cfg(test)]
