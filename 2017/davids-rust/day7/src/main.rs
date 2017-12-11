@@ -8,7 +8,7 @@ mod parser;
 use parser::parse_discs;
 
 fn main() {
-    let input = include_bytes!("input");
+    let input = include_str!("input");
     let mut non_root_discs: HashSet<&str> = HashSet::new();
     let mut all_discs = HashSet::new();
     let discs = parse_discs(input).to_result().unwrap();

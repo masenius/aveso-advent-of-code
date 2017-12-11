@@ -8,14 +8,15 @@ pub struct Disc<'a> {
     pub children: Option<Vec<&'a str>>
 }
 
-named!(number<u32>,
+named!(number<&str, u32>,
        map_res!(
-           map_res!(digit, str::from_utf8),
+           digit,
+//           map_res!(digit, str::from_utf8),
            FromStr::from_str
        )
 );
 
-named!(weight<u32>,
+named!(weight<&str, u32>,
        ws!(delimited!(
            tag!("("),
            number,
@@ -23,18 +24,18 @@ named!(weight<u32>,
        ))
 );
 
-named!(children<Vec<&str>>,
+named!(children<&str, Vec<&str>>,
        ws!(do_parse!(
            tag!("->") >>
            list: separated_nonempty_list_complete!(tag!(","),
-                                                   map_res!(ws!(alpha), str::from_utf8)) >>
+                                                   ws!(alpha)) >>
            (list)
        ))
 );
 
-named!(disc<Disc>,
+named!(disc<&str, Disc>,
        ws!(do_parse!(
-           name: map_res!(alpha, str::from_utf8) >>
+           name: alpha >>
            weight: weight >>
            children: opt!(complete!(children)) >>
                (Disc {
@@ -45,7 +46,7 @@ named!(disc<Disc>,
        ))
 );
 
-named!(pub parse_discs<Vec<Disc>>,
+named!(pub parse_discs<&str, Vec<Disc>>,
        many1!(disc)
 );
 
@@ -57,29 +58,29 @@ mod test {
 
     #[test]
     fn test_weight() {
-        let input = b"(15)";
-        assert_eq!(weight(input), Done(&b""[..], 15));
+        let input = "(15)";
+        assert_eq!(weight(input), Done("", 15));
     }
 
     #[test]
     fn test_children() {
-        let input = b"-> foo, bar,baz";
-        assert_eq!(children(input), Done(&b""[..], vec!["foo", "bar", "baz"]));
-        let input = b"-> foo";
-        assert_eq!(children(input), Done(&b""[..], vec!["foo"]));
+        let input = "-> foo, bar,baz";
+        assert_eq!(children(input), Done("", vec!["foo", "bar", "baz"]));
+        let input = "-> foo";
+        assert_eq!(children(input), Done("", vec!["foo"]));
     }
 
     #[test]
     fn test_disc() {
-        let input = b"foo (16)";
-        assert_eq!(disc(input), Done(&b""[..], Disc {
+        let input = "foo (16)";
+        assert_eq!(disc(input), Done("", Disc {
             name: "foo",
             weight: 16,
             children: None
         }));
 
-        let input = b"bazz (1112) -> foo, bar";
-        assert_eq!(disc(input), Done(&b""[..], Disc {
+        let input = "bazz (1112) -> foo, bar";
+        assert_eq!(disc(input), Done("", Disc {
             name: "bazz",
             weight: 1112,
             children: Some(vec!["foo", "bar"])
@@ -88,8 +89,8 @@ mod test {
 
     #[test]
     fn test_parse_discs() {
-        let input = b"foo (1) -> bar, baz\nabc (12)";
-        assert_eq!(parse_discs(input), Done(&b""[..], vec![
+        let input = "foo (1) -> bar, baz\nabc (12)";
+        assert_eq!(parse_discs(input), Done("", vec![
             Disc {
                 name: "foo",
                 weight: 1,
