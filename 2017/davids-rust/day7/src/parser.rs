@@ -11,7 +11,6 @@ pub struct Disc<'a> {
 named!(number<&str, u32>,
        map_res!(
            digit,
-//           map_res!(digit, str::from_utf8),
            FromStr::from_str
        )
 );
