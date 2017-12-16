@@ -1,7 +1,8 @@
 from functools import reduce
 import binascii
+from operator import add
 
-def knotHash(string):
+def knothash(string):
     lengths = list(map(ord, list(string))) + [17, 31, 73, 47, 23]
     list_ = list(range(256))
     current = 0
@@ -19,6 +20,11 @@ def knotHash(string):
     for i in range(int(len(list_)/16)):
         r.append(reduce(lambda x, y: x ^ y, list_[i * 16:(i + 1) * 16]))
 
-    return binascii.hexlify(bytes(bytearray(r)))
+    return str(bin(int(binascii.hexlify(bytes(bytearray(r))), 16)))[2:]
 
-print(knotHash('206,63,255,131,65,80,238,157,254,24,133,2,16,0,1,3'))
+
+sum = 0
+for i in range(128):
+    sum += knothash('oundnydw-' + str(i)).count('1')
+
+print(sum)
