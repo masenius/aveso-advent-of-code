@@ -35,7 +35,7 @@ fn create_action(action: &Action, amount: i32) -> Box<Fn(i32) -> i32> {
     }
 }
 
-fn process_instruction(instruction: &Instruction) -> Box<Fn(&mut Register)> {
+fn process_instruction(instruction: &Instruction) -> Box<Fn(&mut Register) -> i32> {
     let action = create_action(&instruction.action, instruction.amount);
     let predicate = create_predicate(&instruction.condition);
     let target = String::from(instruction.target);
@@ -48,11 +48,16 @@ fn process_instruction(instruction: &Instruction) -> Box<Fn(&mut Register)> {
             if reg.contains_key(&target) {
                 let val = reg.get_mut(&target).unwrap();
                 *val = action(*val);
+                *val
             }
             else {
                 let val = action(0);
                 reg.insert(target.clone(), val);
+                val
             }
+        }
+        else {
+            *(reg.get(&target).unwrap_or(&0))
         }
     })
 }
@@ -60,10 +65,15 @@ fn process_instruction(instruction: &Instruction) -> Box<Fn(&mut Register)> {
 fn main() {
     let input = include_str!("input");
     let instructions = parser::parse_instructions(input).to_result().unwrap();
+    let mut largest_seen = 0;
     let mut register = Register::new();
     for instruction in instructions.iter() {
-        process_instruction(&instruction)(&mut register);
+        let reg_val = process_instruction(&instruction)(&mut register);
+        if reg_val > largest_seen {
+            largest_seen = reg_val;
+        }
     }
     let largest = register.values().max().unwrap();
     println!("Largest value in register: {}", largest);
+    println!("Largest seen value in register: {}", largest_seen);
 }
