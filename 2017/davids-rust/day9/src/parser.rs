@@ -1,5 +1,3 @@
-use std::str;
-
 use streamcontent::StreamContent;
 use nom::anychar;
 
@@ -11,12 +9,29 @@ named!(pub group<StreamContent>,
        ), StreamContent::Group)
 );
 
-named!(garbage<StreamContent>,
+fn vec_to_string(input: Vec<u8>) -> String {
+    String::from_utf8_lossy(&input).into_owned()
+}
+
+named!(non_empty_garbage<StreamContent>,
        map!(delimited!(
            tag!("<"),
-           map_res!(escaped!(is_not!(">!"), '!', anychar), str::from_utf8),
+           map!(escaped_transform!(is_not!(">!"), '!', value!(&b""[..], anychar)), vec_to_string),
            tag!(">")
        ), StreamContent::Garbage)
+);
+
+// Due to some weird quirk with escape_transformed!, it doesn't seem to
+// handle the case with empty garbage. Thus, a special case is necessary
+named!(empty_garbage<StreamContent>,
+       map!(
+           value!(String::from(""), tag!("<>")),
+           StreamContent::Garbage
+       )
+);
+
+named!(garbage<StreamContent>,
+       alt!(empty_garbage | non_empty_garbage)
 );
 
 
@@ -28,13 +43,13 @@ mod test {
 
     #[test]
     fn test_garbage() {
-        assert_eq!(garbage(b"<abcd>"), Done(&b""[..], Garbage("abcd")));
-        assert_eq!(garbage(b"<ab!>cd>"), Done(&b""[..], Garbage("ab!>cd")));
-        assert_eq!(garbage(b"<ab!!>cd>"), Done(&b"cd>"[..], Garbage("ab!!")));
-        assert_eq!(garbage(b"<<<<>"), Done(&b""[..], Garbage("<<<")));
-        assert_eq!(garbage(b"<>"), Done(&b""[..], Garbage("")));
+        assert_eq!(garbage(b"<abcd>"), Done(&b""[..], Garbage(String::from("abcd"))));
+        assert_eq!(garbage(b"<ab!>cd>"), Done(&b""[..], Garbage(String::from("abcd"))));
+        assert_eq!(garbage(b"<ab!!>cd>"), Done(&b"cd>"[..], Garbage(String::from("ab"))));
+        assert_eq!(garbage(b"<<<<>"), Done(&b""[..], Garbage(String::from("<<<"))));
+        assert_eq!(garbage(b"<>"), Done(&b""[..], Garbage(String::from(""))));
         assert_eq!(garbage(br#"<{o"i!a,<{i<a>"#),
-                   Done(&b""[..], Garbage(r#"{o"i!a,<{i<a"#)));
+                   Done(&b""[..], Garbage(String::from(r#"{o"i,<{i<a"#))));
     }
 
     #[test]
@@ -56,12 +71,12 @@ mod test {
         assert_eq!(group(b"{{<!>},{<!>},{<!>},{<a>}}"),
                    Done(&b""[..], Group(vec![
                        Group(vec![
-                           Garbage("!>},{<!>},{<!>},{<a")
+                           Garbage(String::from("},{<},{<},{<a"))
                        ])])));
         assert_eq!(group(b"{{},<sdsa{,}!>>}"),
                    Done(&b""[..], Group(vec![
                        Group(vec![]),
-                       Garbage("sdsa{,}!>")
+                       Garbage(String::from("sdsa{,}"))
                    ])));
     }
 }

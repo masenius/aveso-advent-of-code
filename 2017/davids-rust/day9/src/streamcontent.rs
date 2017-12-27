@@ -1,10 +1,10 @@
 #[derive(Debug, PartialEq)]
-pub enum StreamContent<'a> {
-    Group(Vec<StreamContent<'a>>),
-    Garbage(&'a str)
+pub enum StreamContent {
+    Group(Vec<StreamContent>),
+    Garbage(String)
 }
 
-impl<'a> StreamContent<'a> {
+impl StreamContent {
     pub fn visit(&self, visitor: &mut StreamContentVisitor) {
         visitor.visit(&self);
     }
@@ -12,20 +12,24 @@ impl<'a> StreamContent<'a> {
 
 pub struct StreamContentVisitor {
     score: u32,
-    level: u32
+    level: u32,
+    garbage_amount: u32
 }
 
 impl StreamContentVisitor {
     pub fn new() -> Self {
         StreamContentVisitor {
             score: 0,
-            level: 1
+            level: 1,
+            garbage_amount: 0
         }
     }
 
     pub fn visit(&mut self, content: &StreamContent) {
         match content {
-            &StreamContent::Garbage(_) => {},
+            &StreamContent::Garbage(ref garbage) => {
+                self.garbage_amount += garbage.len() as u32
+            },
             &StreamContent::Group(ref group_contents) => {
                 self.score += self.level;
                 self.level += 1;
@@ -39,5 +43,9 @@ impl StreamContentVisitor {
 
     pub fn score(&self) -> u32 {
         self.score
+    }
+
+    pub fn garbage_amount(&self) -> u32 {
+        self.garbage_amount
     }
 }

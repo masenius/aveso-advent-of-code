@@ -12,4 +12,5 @@ fn main() {
     let mut visitor = StreamContentVisitor::new();
     top_group.visit(&mut visitor);
     println!("Part 1: Total score: {}", visitor.score());
+    println!("Part 2: Total amount of garbage: {}", visitor.garbage_amount());
 }
