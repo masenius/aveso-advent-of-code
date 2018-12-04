@@ -13,6 +13,11 @@ namespace Day1
             this.inputStream = inputStream;
         }
 
+        public void Reset(TextReader inputStream)
+        {
+            this.inputStream = inputStream;
+        }
+
         public IEnumerable<int> ReadFrequencies()
         {
             while(true)
