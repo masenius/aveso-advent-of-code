@@ -11,6 +11,14 @@ namespace Day2
             var inputStream = new StreamReader(idsFile);
             var checkSum = IDSummer.CalculateSumOfIds(inputStream);
             System.Console.WriteLine($"Checksum: {checkSum}");
+
+            inputStream = new StreamReader(idsFile);
+            string letters = null;
+            if (!IDFinder.FindSimilar(inputStream, out letters))
+            {
+                System.Console.Error.WriteLine("Error: Could not find similar IDs");
+            }
+            System.Console.WriteLine($"Common characters: {letters}");
         }
     }
 }
