@@ -19,6 +19,8 @@ namespace Day3
 
             var numberOfOverlapping = plotter.NumberOfOverlapping();
             Console.WriteLine($"Number of overlapping inches: {numberOfOverlapping}");
+            var idOfNonOverlapping = plotter.FindNonOverlappingClaim();
+            Console.WriteLine($"Id of non-overlapping claim: {idOfNonOverlapping}");
         }
     }
 }

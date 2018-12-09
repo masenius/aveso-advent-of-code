@@ -23,5 +23,22 @@ namespace Day3Test
 
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public void TestFindNonOverlappingClaim()
+        {
+            var canvas = new bool[8,8];
+            var plotter = new ClothPlotter(canvas);
+            plotter.Plot(new Claim(1, 1, 3, 4, 4));
+            plotter.Plot(new Claim(2, 3, 1, 4, 4));
+
+            // Does not overlap any
+            plotter.Plot(new Claim(3, 5, 5, 2, 2));
+
+            var expected = 3u;
+            var actual = plotter.FindNonOverlappingClaim();
+
+            Assert.Equal(expected, actual);
+        }
     }
 }
