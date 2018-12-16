@@ -29,7 +29,7 @@ namespace Day4Test
                     new NapTime { Start = new TimeStamp { Year = 1518, Month = 11, Day = 2, Hour = 10, Minute = 24 }, Duration = 10 }}
             };
 
-            var expected = 24u;
+            var expected = (24u, 2u);
             var actual = guard.MostCommonMinuteAsleep();
 
             Assert.Equal(expected, actual);

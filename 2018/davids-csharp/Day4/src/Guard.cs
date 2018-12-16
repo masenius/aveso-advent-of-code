@@ -29,7 +29,7 @@ namespace Day4
             this.NapTimes = new List<NapTime>();
         }
 
-        public uint MostCommonMinuteAsleep()
+        public (uint, uint) MostCommonMinuteAsleep()
         {
             var minutes = new uint[60];
             foreach (var nap in this.NapTimes)
@@ -51,7 +51,7 @@ namespace Day4
                     mostCommonMinute = i;
                 }
             }
-            return mostCommonMinute;
+            return (mostCommonMinute, max);
         }
     }
 }

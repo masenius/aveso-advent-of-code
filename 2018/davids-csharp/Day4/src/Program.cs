@@ -17,9 +17,27 @@ namespace Day4
             var sleepiestGuard = guards.Aggregate((sleepiest, next) => next.MinutesAsleep > sleepiest.MinutesAsleep ? next : sleepiest);
 
             Console.WriteLine($"Sleepiest guard: {sleepiestGuard.Number}");
-            var mostCommonMinute = sleepiestGuard.MostCommonMinuteAsleep();
-            Console.WriteLine($"Most commonly asleep minute {mostCommonMinute}");
-            Console.WriteLine($"Multiplied: {sleepiestGuard.Number * mostCommonMinute}");
+            (uint mostCommonMinute, uint times) asleepInfo = sleepiestGuard.MostCommonMinuteAsleep();
+            Console.WriteLine($"Most commonly asleep minute {asleepInfo.mostCommonMinute}");
+            Console.WriteLine($"Multiplied: {sleepiestGuard.Number * asleepInfo.mostCommonMinute}");
+
+            Guard mostRegularGuard = null;
+            uint mostTimes = 0;
+            uint mostCommonMinute = 0;
+            foreach (var guard in guards)
+            {
+                // Note to self: C# doesn't support variable shadowing
+                (uint mostCommonMinute, uint times) info = guard.MostCommonMinuteAsleep();
+                if (info.times > mostTimes)
+                {
+                    mostRegularGuard = guard;
+                    mostTimes = info.times;
+                    mostCommonMinute = info.mostCommonMinute;
+                }
+            }
+            Console.WriteLine($"Most regular guard: {mostRegularGuard.Number}");
+            Console.WriteLine($"Most commonly asleep minute: {mostCommonMinute} ({mostTimes} times)");
+            Console.WriteLine($"Multiplied: {mostRegularGuard.Number * mostCommonMinute}");
         }
     }
 }
