@@ -9,7 +9,6 @@ namespace Day5
         {
             var input = new StreamReader(args[0]);
             var polymer = new Polymer(input);
-            polymer.React();
 
             Console.WriteLine($"Remaining length: {polymer.ToString().Length}");
         }

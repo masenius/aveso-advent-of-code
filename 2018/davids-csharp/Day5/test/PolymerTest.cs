@@ -16,7 +16,6 @@ namespace Day5Test
 
             var expected = "dabCBAcaDA";
 
-            polymer.React();
             var actual = polymer.ToString();
 
             Assert.Equal(expected, actual);

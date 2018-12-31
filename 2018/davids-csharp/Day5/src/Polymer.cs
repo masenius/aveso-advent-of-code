@@ -6,48 +6,31 @@ namespace Day5
 {
     public class Polymer
     {
-        private LinkedList<char> CharList;
+        private Stack<char> Chars;
 
         public Polymer(TextReader reader)
         {
-            this.CharList = new LinkedList<char>();
+            this.Chars = new Stack<char>();
 
             int c;
             while ((c = reader.Read()) != -1)
             {
-                this.CharList.AddLast((char) c);
-            }
-        }
-
-        public void React()
-        {
-            var current = this.CharList.First;
-            var next = current.Next;
-            while (next != null)
-            {
-                if (UnitsReact(current.Value, next.Value))
+                var cChar = (char) c;
+                if (this.Chars.Count > 0 && UnitsReact(cChar, this.Chars.Peek()))
                 {
-                    this.CharList.Remove(current);
-                    this.CharList.Remove(next);
-
-                    current = current.Previous;
-                    if (current == null)
-                    {
-                        // We have removed the previously first element of the list
-                        current = this.CharList.First;
-                    }
+                    this.Chars.Pop();
                 }
                 else
                 {
-                    current = next;
+                    this.Chars.Push(cChar);
                 }
-                next = current.Next;
             }
         }
 
         public override string ToString()
         {
-            return string.Concat(this.CharList);
+            // Need to reverse the stack
+            return string.Concat(new Stack<char>(this.Chars));
         }
 
         private bool UnitsReact(char u1, char u2)
