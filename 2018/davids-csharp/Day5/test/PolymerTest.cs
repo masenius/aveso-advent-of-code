@@ -20,5 +20,18 @@ namespace Day5Test
 
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public void TestReactFiltered()
+        {
+            var input = new StringReader("dabAcCaCBAcCcaDA");
+            var polymer = new Polymer(input, 'c');
+
+            var expected = "daDA";
+
+            var actual = polymer.ToString();
+
+            Assert.Equal(expected, actual);
+        }
     }
 }

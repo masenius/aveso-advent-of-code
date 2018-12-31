@@ -6,9 +6,28 @@ namespace Day5
 {
     public class Polymer
     {
+        private delegate bool Filter(char c);
+
         private Stack<char> Chars;
 
         public Polymer(TextReader reader)
+        {
+            BuildAndReact(reader, c => true);
+        }
+
+        public Polymer(TextReader reader, char filterChar)
+        {
+            char upperFilterChar = Char.ToUpper(filterChar);
+            BuildAndReact(reader, c => (c != filterChar && c != upperFilterChar));
+        }
+
+        public override string ToString()
+        {
+            // Need to reverse the stack
+            return string.Concat(new Stack<char>(this.Chars));
+        }
+
+        private void BuildAndReact(TextReader reader, Filter filter)
         {
             this.Chars = new Stack<char>();
 
@@ -16,6 +35,11 @@ namespace Day5
             while ((c = reader.Read()) != -1)
             {
                 var cChar = (char) c;
+                if (!filter(cChar))
+                {
+                    continue;
+                }
+
                 if (this.Chars.Count > 0 && UnitsReact(cChar, this.Chars.Peek()))
                 {
                     this.Chars.Pop();
@@ -25,12 +49,6 @@ namespace Day5
                     this.Chars.Push(cChar);
                 }
             }
-        }
-
-        public override string ToString()
-        {
-            // Need to reverse the stack
-            return string.Concat(new Stack<char>(this.Chars));
         }
 
         private bool UnitsReact(char u1, char u2)
