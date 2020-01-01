@@ -10,6 +10,7 @@ pub struct IntcodeMachine {
     pc: usize,
     state: Vec<isize>,
     input: Option<isize>,
+    relative_base: isize,
 }
 
 impl IntcodeMachine {
@@ -18,7 +19,12 @@ impl IntcodeMachine {
             pc: 0,
             state: mem,
             input: None,
+            relative_base: 0,
         }
+    }
+
+    pub fn add_memory(&mut self, words: usize) {
+        self.state.resize(self.state.len() + words, 0);
     }
 
     pub fn state(&self, index: usize) -> isize {
@@ -32,7 +38,7 @@ impl IntcodeMachine {
                 self.op_add(
                     self.get_value(mode, 1),
                     self.get_value(mode, 2),
-                    self.state[self.pc + 3] as usize,
+                    self.get_dest(mode, 3),
                 );
                 self.pc += 4;
             }
@@ -40,13 +46,13 @@ impl IntcodeMachine {
                 self.op_mul(
                     self.get_value(mode, 1),
                     self.get_value(mode, 2),
-                    self.state[self.pc + 3] as usize,
+                    self.get_dest(mode, 3),
                 );
                 self.pc += 4;
             }
             3 => {
                 if let Some(input) = self.input {
-                    self.op_input(input, self.state[self.pc + 1] as usize);
+                    self.op_input(input, self.get_dest(mode, 1));
                     self.input = None;
                     self.pc += 2;
                 } else {
@@ -64,7 +70,7 @@ impl IntcodeMachine {
                 self.op_less_than(
                     self.get_value(mode, 1),
                     self.get_value(mode, 2),
-                    self.state[self.pc + 3] as usize,
+                    self.get_dest(mode, 3),
                 );
                 self.pc += 4;
             }
@@ -72,11 +78,14 @@ impl IntcodeMachine {
                 self.op_equals(
                     self.get_value(mode, 1),
                     self.get_value(mode, 2),
-                    self.state[self.pc + 3] as usize,
+                    self.get_dest(mode, 3),
                 );
                 self.pc += 4;
             }
-
+            9 => {
+                self.op_increase_relative_base(self.get_value(mode, 1));
+                self.pc += 2;
+            }
             99 => return MachineState::Halted,
             n => panic!("Invalid opcode {}", n),
         }
@@ -89,10 +98,25 @@ impl IntcodeMachine {
 
     fn get_value(&self, mode: isize, arg_n: usize) -> isize {
         let arg = self.state[self.pc + arg_n];
-        match mode / 10isize.pow((arg_n - 1) as u32) % 10 {
+        match self.get_mode(mode, arg_n) {
             0 => self.state[arg as usize],
-            _ => arg,
+            1 => arg,
+            2 => self.state[(self.relative_base + arg) as usize],
+            _ => panic!("Unknown parameter mode"),
         }
+    }
+
+    fn get_dest(&self, mode: isize, arg_n: usize) -> usize {
+        let arg = self.state[self.pc + arg_n];
+        match mode / 10isize.pow((arg_n - 1) as u32) % 10 {
+            0 => arg as usize,
+            2 => (self.relative_base + arg) as usize,
+            _ => panic!("Unknown or invalid parameter mode for destination"),
+        }
+    }
+
+    fn get_mode(&self, mode: isize, arg_n: usize) -> isize {
+        mode / 10isize.pow((arg_n - 1) as u32) % 10
     }
 
     fn op_add(&mut self, val1: isize, val2: isize, dst: usize) {
@@ -131,6 +155,10 @@ impl IntcodeMachine {
     fn op_equals(&mut self, val1: isize, val2: isize, dst: usize) {
         let res = if val1 == val2 { 1 } else { 0 };
         self.state[dst] = res;
+    }
+
+    fn op_increase_relative_base(&mut self, val1: isize) {
+        self.relative_base += val1;
     }
 }
 
@@ -289,5 +317,41 @@ mod test {
         assert_eq!(machine.step(), Running);
         assert_eq!(machine.pc, 4);
         assert_eq!(machine.state, vec![0, 4, 5, 0, 1, 0]);
+    }
+
+    #[test]
+    fn test_increase_relative_base() {
+        let mem = vec![109, 10];
+        let mut machine = IntcodeMachine::load(mem);
+        assert_eq!(machine.relative_base, 0);
+        assert_eq!(machine.step(), Running);
+        assert_eq!(machine.pc, 2);
+        assert_eq!(machine.relative_base, 10);
+    }
+
+    #[test]
+    fn test_add_memory() {
+        let mem = vec![1, 2, 3, 4];
+        let mut machine = IntcodeMachine::load(mem);
+        machine.add_memory(4);
+        assert_eq!(machine.state, vec![1, 2, 3, 4, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_quine() {
+        let mem = vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+        let mut machine = IntcodeMachine::load(mem.clone());
+        machine.add_memory(100);
+        let mut out = Vec::new();
+        loop {
+            match machine.step() {
+                Output(val) => out.push(val),
+                Halted => break,
+                _ => {}
+            }
+        }
+        assert_eq!(mem, out);
     }
 }
