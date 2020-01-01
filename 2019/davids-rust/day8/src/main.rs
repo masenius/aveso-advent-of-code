@@ -28,6 +28,54 @@ impl Image {
         }
         Color::Transparent
     }
+
+    #[cfg(not(feature = "gfx"))]
+    fn render(&self) {
+        for pixel in 0..(self.width * self.height) {
+            if pixel % self.width == 0 && pixel != 0 {
+                print!("\n");
+            }
+            match self.pixel_color(pixel) {
+                // Should preferably be the other way around,
+                // but the letters are impossible to discern then
+                Color::Black => print!(" "),
+                Color::White => print!("#"),
+                Color::Transparent => panic!("Transparency not supported"),
+            }
+        }
+        print!("\n")
+    }
+
+    #[cfg(feature = "gfx")]
+    fn render(&self) {
+        use minifb::{Scale, Window, WindowOptions};
+        use std::time::Duration;
+        const FPS: u64 = 10;
+
+        let buffer = (0..(self.width * self.height))
+            .map(|p| self.pixel_color(p).to_rgb())
+            .collect::<Vec<u32>>();
+
+        let mut window = Window::new(
+            "Day 8",
+            self.width,
+            self.height,
+            WindowOptions {
+                scale: Scale::X4,
+                ..Default::default()
+            },
+        )
+        .expect("Failed to create window");
+
+        // Mostly to catch window events, as the buffer will not be updated
+        window.limit_update_rate(Some(Duration::from_millis(1000 / FPS)));
+
+        while window.is_open() {
+            window
+                .update_with_buffer(&buffer, self.width, self.height)
+                .expect("Failed to update window");
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +83,16 @@ enum Color {
     Black,
     White,
     Transparent,
+}
+
+impl Color {
+    fn to_rgb(&self) -> u32 {
+        match *self {
+            Color::Black => 0,
+            // Transparency not supported
+            Color::White | Color::Transparent => 0x00FFFFFF,
+        }
+    }
 }
 
 fn count_zeros(series: &[u8]) -> usize {
@@ -70,19 +128,8 @@ fn main() {
     let answer = ones_multiplied_by_twos(least_zeros);
     println!("Part 1: {}", answer);
 
-    for pixel in 0..(WIDTH * HEIGHT) {
-        if pixel % WIDTH == 0 && pixel != 0 {
-            print!("\n");
-        }
-        match image.pixel_color(pixel) {
-            // Should preferably be the other way around,
-            // but the letters are impossible to discern then
-            Color::Black => print!(" "),
-            Color::White => print!("#"),
-            Color::Transparent => panic!("Transparency not supported"),
-        }
-    }
-    print!("\n")
+    println!("Part 2:");
+    image.render();
 }
 
 #[cfg(test)]
